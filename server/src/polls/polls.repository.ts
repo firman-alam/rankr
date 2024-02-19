@@ -91,20 +91,15 @@ export class PollsRepository {
     const participantPath = `.participants.${userID}`;
 
     try {
-      await this.redisClient.call(
-        'JSON.SET',
-        key,
-        participantPath,
-        JSON.stringify(name),
-      );
-
       const pollJSON = await this.redisClient.get(key);
-
       const poll = JSON.parse(pollJSON) as Poll;
 
-      this.logger.debug(`Current Participants for pollID: ${pollID}`);
+      poll.participants[userID] = name;
 
-      return poll;
+      const updatedPollJSON = JSON.stringify(poll);
+      await this.redisClient.set(key, updatedPollJSON);
+
+      return JSON.parse(await this.redisClient.get(key)) as Poll;
     } catch (error) {
       this.logger.error(
         `Failed to add participant with userID/name: ${userID} to pollID: ${pollID}`,
